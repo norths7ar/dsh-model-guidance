@@ -30,9 +30,13 @@ export function apply(ctx, config) {
   // snapshot that agent/request will use, unlike agent.options during a switch.
   ctx.on(
     "system-prompt/assemble",
-    async (_assembly, _context, next) => {
+    async (_assembly, context, next) => {
       const data = config.data.get();
       const assembled = await next();
+      // Query this agent's live composition, including independently mounted children.
+      const agentContext = context.agent?.ctx;
+      if (agentContext?.get("agentPresets")?.composedPreset(agentContext) !== "standard")
+        return assembled;
       const { provider, model } = assembled.variables;
       if (!Object.hasOwn(data.bindings, provider)) return assembled;
       const models = data.bindings[provider];

@@ -15,12 +15,48 @@ function setup(initialData) {
   };
   apply(ctx, { data: { get: () => data } });
   return {
-    assemble: (assembly) => hook({}, {}, async () => assembly),
+    assemble: (assembly, context = agentContext("standard")) =>
+      hook({}, context, async () => assembly),
     update: (nextData) => {
       data = nextData;
     },
   };
 }
+
+function agentContext(preset, parentPreset = "standard") {
+  const ctx = {
+    get(name) {
+      assert.equal(name, "agentPresets");
+      return {
+        composedPreset(target) {
+          assert.equal(target, ctx);
+          return preset;
+        },
+      };
+    },
+  };
+  return { agent: { ctx, session: { header: { agentPreset: parentPreset } } } };
+}
+
+test("uses each agent's live preset rather than its inherited session header", async () => {
+  const plugin = setup(data());
+  assert.equal(
+    (await plugin.assemble(assembly(), agentContext("standard", "cordis"))).sections[0].text,
+    "custom persona",
+  );
+  for (const preset of ["cordis", "minimal", "ptc", "custom-standard", undefined]) {
+    const original = assembly();
+    assert.equal(await plugin.assemble(original, agentContext(preset)), original);
+  }
+});
+
+test("assembly without an agent or preset service keeps the original prompt", async () => {
+  const plugin = setup(data());
+  for (const context of [{}, { agent: { ctx: { get: () => undefined } } }]) {
+    const original = assembly();
+    assert.equal(await plugin.assemble(original, context), original);
+  }
+});
 
 function assembly(provider = "provider-a", model = "model-a") {
   return {
