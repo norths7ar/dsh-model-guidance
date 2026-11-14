@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "按模型绑定和编辑行为指导，随模型切换生效。",
+  "description": "为不同模型设置提示词与行为偏好。",
   "main": "index.js",
   "exports": {
     ".": "./index.js",
@@ -19,7 +19,7 @@
     "locale/*.json",
     "README.md",
     "README.en.md",
-    "CHANGELOG.md",
+    "assets/prompts.png",
     "LICENSE"
   ],
   "dsh": {
