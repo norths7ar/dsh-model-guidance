@@ -83,15 +83,17 @@ test("replaces only persona without mutating the original assembly", async () =>
   assert.deepEqual(result.sections[0], {
     ...original.sections[0],
     text: "custom persona",
-    interpolate: false,
+    interpolate: true,
   });
 });
 
-test("keeps template-looking guide text literal", async () => {
-  const text = "{{model}} ${provider} {model} <%= model %>";
+test("delegates prompt variable interpolation to the host renderer", async () => {
+  const text = "{{model}} {{provider}} ${provider} {model} <%= model %>";
   const result = await setup(data(text)).assemble(assembly());
   assert.equal(result.sections[0].text, text);
-  assert.equal(result.sections[0].interpolate, false);
+  assert.equal(result.sections[0].interpolate, true);
+  assert.equal(result.variables.model, "model-a");
+  assert.equal(result.variables.provider, "provider-a");
 });
 
 test("reads updated volatile config for each assembly", async () => {

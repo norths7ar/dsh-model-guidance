@@ -46,7 +46,7 @@ export function apply(ctx, config) {
         ...assembled,
         sections: assembled.sections.map((section) =>
           section.name === "deployment:persona-prefix"
-            ? { ...section, text, interpolate: false }
+            ? { ...section, text, interpolate: true }
             : section,
         ),
       };

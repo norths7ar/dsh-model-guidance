@@ -39,7 +39,17 @@ function harness(
   };
   let plugin;
   const primitives = Object.fromEntries(
-    ["Button", "Input", "Modal", "Menu", "Checkbox"].map((name) => [name, name]),
+    [
+      "Button",
+      "Input",
+      "Modal",
+      "Checkbox",
+      "IconPlusOutlineRegular",
+      "IconCopyOutlineRegular",
+      "IconTrashOutlineRegular",
+      "IconQuestionOutlineRegular",
+      "IconCloseOutlineRegular",
+    ].map((name) => [name, name]),
   );
   vm.runInNewContext(source, {
     window: {
@@ -106,7 +116,14 @@ function harness(
     subscribe: () => () => {},
     mutate: async (operations, revision) => {
       calls.push({ operations, revision });
-      return mutation(operations, revision);
+      const ok = await mutation(operations, revision);
+      if (ok)
+        snapshot = {
+          ...snapshot,
+          revision: snapshot.revision + 1,
+          value: { data: structuredClone(operations[0].value) },
+        };
+      return ok;
     },
   };
   plugin.apply({
@@ -195,10 +212,190 @@ function harness(
     edit: (value, id = "dmg-guide-text") =>
       find((node) => node.props.id === id).props.onChange({ target: { value } }),
     click: (text) =>
-      find((node) => node.type === "Button" && node.children.includes(text)).props.onClick(),
+      find(
+        (node) =>
+          (node.type === "Button" || node.type === "button") &&
+          (node.children.includes(text) || node.props["aria-label"] === text),
+      ).props.onClick(),
     tick: () => new Promise((resolve) => setImmediate(resolve)),
   };
 }
+
+function select(app, id) {
+  app.store.update((previous) => ({ ...previous, selectedId: id }));
+}
+
+function changeDraft(app, change) {
+  app.store.update((previous) => {
+    const draft = structuredClone(previous.draft);
+    change(draft.data);
+    return { ...previous, draft };
+  });
+}
+
+function confirmOverwrite(app) {
+  const modal = app.find(
+    (node) => node.type === "Modal" && node.props.title === "Overwrite the latest configuration?",
+  );
+  modal.props.footer.children
+    .find((node) => node.children.includes("Overwrite latest with draft"))
+    .props.onClick();
+}
+
+test("single deletion saves at the latest revision when content is unchanged", async () => {
+  const app = harness();
+  app.edit("A draft");
+  select(app, "b");
+  app.click("Delete “Other”");
+  app.click("Delete prompt");
+  app.setSnapshot({ revision: 2 });
+  app.click("Save");
+  await app.tick();
+  assert.equal(app.calls.length, 1);
+  assert.equal(app.calls[0].revision, 2);
+  assert.equal(app.calls[0].operations[0].value.guides.b, undefined);
+  assert.equal(app.store.getSnapshot().draft.data.guides.a.text, "A draft");
+  app.setSnapshot({ revision: 4 });
+  select(app, "a");
+  app.click("Save");
+  await app.tick();
+  assert.equal(app.calls.length, 2);
+  assert.equal(app.calls[1].revision, 4);
+  assert.equal(app.store.getSnapshot().draft, null);
+});
+
+test("single saves preserve other text drafts and rebase the next save revision", async () => {
+  const app = harness();
+  app.edit("A changed");
+  select(app, "b");
+  app.edit("B changed");
+  select(app, "a");
+  app.click("Save");
+  await app.tick();
+  assert.equal(app.calls[0].operations[0].value.guides.b.text, "second");
+  assert.equal(app.store.getSnapshot().draft.data.guides.b.text, "B changed");
+  assert.equal(app.store.getSnapshot().draft.revision, 2);
+  select(app, "b");
+  app.click("Save");
+  await app.tick();
+  assert.equal(app.calls[1].revision, 2);
+  assert.equal(app.store.getSnapshot().draft, null);
+});
+
+test("saving either route owner moves binding without saving the other's text", async () => {
+  const app = harness();
+  app.edit("A draft");
+  changeDraft(app, (data) => {
+    data.bindings.provider.occupied = "a";
+    data.guides.b.text = "B draft";
+  });
+  app.click("Save");
+  await app.tick();
+  assert.equal(app.calls[0].operations[0].value.bindings.provider.occupied, "a");
+  assert.equal(app.calls[0].operations[0].value.guides.b.text, "second");
+  assert.equal(app.store.getSnapshot().draft.data.guides.b.text, "B draft");
+});
+
+test("new destination dependency is reachable and never implicitly saved with old owner", async () => {
+  const app = harness();
+  app.click("New");
+  const id = app.store.getSnapshot().selectedId;
+  changeDraft(app, (data) => {
+    data.bindings.provider.missing = id;
+  });
+  select(app, "a");
+  assert.equal(
+    app.find((node) => node.type === "Button" && node.children.includes("Save")).props.disabled,
+    true,
+  );
+  app.click("Save");
+  assert.equal(app.calls.length, 0);
+  app.find((node) => node.props.className === "dmg-dependency").props.onClick();
+  assert.equal(app.store.getSnapshot().selectedId, id);
+  app.click("Save");
+  await app.tick();
+  assert.equal(app.calls[0].operations[0].value.bindings.provider.missing, id);
+  assert.equal(Object.keys(app.calls[0].operations[0].value.guides)[0], id);
+  assert.equal(app.store.getSnapshot().draft, null);
+});
+
+test("discarding a transfer preserves another prompt's pending deletion", () => {
+  const app = harness();
+  app.edit("A draft");
+  changeDraft(app, (data) => {
+    delete data.guides.b;
+    data.bindings.provider.occupied = "a";
+  });
+  app.click("Discard");
+  const draft = app.store.getSnapshot().draft;
+  assert.equal(draft.data.guides.a.text, "original");
+  assert.equal(draft.data.guides.b, undefined);
+  assert.equal(draft.data.bindings.provider.occupied, undefined);
+  select(app, "b");
+  assert.equal(
+    app.find((node) => node.type === "Button" && node.children.includes("Save")).props.disabled,
+    false,
+  );
+  app.click("Discard");
+  assert.equal(app.store.getSnapshot().draft, null);
+});
+
+test("single delete overwrite removes remote-added routes to the deleted prompt", async () => {
+  const app = harness();
+  select(app, "a");
+  app.edit("draft");
+  const remote = structuredClone(app.store.getSnapshot().draft.base);
+  remote.bindings.provider.extra = "a";
+  changeDraft(app, (data) => {
+    delete data.guides.a;
+    delete data.bindings.provider.missing;
+  });
+  app.setSnapshot({ revision: 2, value: { data: remote } });
+  app.click("Save");
+  confirmOverwrite(app);
+  await app.tick();
+  assert.equal(app.calls[0].operations[0].value.guides.a, undefined);
+  assert.equal(app.calls[0].operations[0].value.bindings.provider.extra, undefined);
+});
+
+test("single overwrite restores current route-only prompt without rolling back other remote text", async () => {
+  const app = harness();
+  app.edit("original");
+  app.edit("temporary");
+  changeDraft(app, (data) => {
+    data.guides.a.text = "original";
+    data.bindings.provider.occupied = "a";
+  });
+  const remote = structuredClone(app.store.getSnapshot().draft.base);
+  delete remote.guides.a;
+  delete remote.bindings.provider.missing;
+  remote.guides.b.text = "remote B";
+  app.setSnapshot({ revision: 2, value: { data: remote } });
+  app.click("Save");
+  confirmOverwrite(app);
+  await app.tick();
+  assert.equal(app.calls[0].operations[0].value.guides.a.text, "original");
+  assert.equal(app.calls[0].operations[0].value.guides.b.text, "remote B");
+  assert.equal(app.store.getSnapshot().draft, null);
+});
+
+test("remaining route-only draft retains missing owner for later independent save", async () => {
+  const app = harness();
+  app.edit("A changed");
+  changeDraft(app, (data) => {
+    data.bindings.provider.available = "b";
+  });
+  const remote = structuredClone(app.store.getSnapshot().draft.base);
+  delete remote.guides.b;
+  delete remote.bindings.provider.occupied;
+  app.setSnapshot({ revision: 2, value: { data: remote } });
+  app.click("Save");
+  confirmOverwrite(app);
+  await app.tick();
+  assert.equal(app.calls[0].operations[0].value.guides.b, undefined);
+  assert.equal(app.store.getSnapshot().draft.data.guides.b.text, "second");
+  assert.equal(app.store.getSnapshot().draft.data.bindings.provider.available, "b");
+});
 
 test("draft survives page remount, marks only changed guides, and clears on reverting", () => {
   const app = harness();
@@ -211,15 +408,52 @@ test("draft survives page remount, marks only changed guides, and clears on reve
   assert.equal(app.store.getSnapshot().draft, null);
 });
 
-test("new guide followed by delete is not dirty; editor owns the delete menu", () => {
+test("new prompt followed by direct row deletion is not dirty", () => {
   const app = harness();
   app.click("New");
-  const menu = app.find((node) => node.type === "Menu");
-  assert.equal(JSON.stringify(menu.props.items.map((item) => item.id)), '["delete"]');
-  menu.props.onSelect("delete");
+  app.find((node) => node.props["aria-label"] === "Delete “New prompt”").props.onClick();
   assert.notEqual(app.store.getSnapshot().draft, null);
-  app.click("Delete guide");
+  app.click("Delete prompt");
   assert.equal(app.store.getSnapshot().draft, null);
+});
+
+test("duplicating a custom prompt selects a new editable draft without copying bindings", async () => {
+  const app = harness();
+  app.find((node) => node.props["aria-label"] === "Duplicate").props.onClick();
+  const { selectedId, draft } = app.store.getSnapshot();
+  assert.notEqual(selectedId, "a");
+  assert.equal(
+    JSON.stringify(draft.data.guides[selectedId]),
+    '{"name":"我的指南","text":"original"}',
+  );
+  assert.equal(JSON.stringify(draft.data.bindings), '{"provider":{"missing":"a","occupied":"b"}}');
+  assert.equal(app.find((node) => node.props.id === "dmg-guide-text").props.value, "original");
+  app.edit("copy changed");
+  assert.equal(app.store.getSnapshot().draft.data.guides.a.text, "original");
+  assert.equal(app.store.getSnapshot().draft.data.guides[selectedId].text, "copy changed");
+  app.click("Save all");
+  await app.tick();
+  assert.equal(Object.keys(app.calls[0].operations[0].value.guides).length, 3);
+});
+
+test("built-in default is selectable and read only without custom controls or config data", () => {
+  const app = harness({ guides: {}, bindings: {} });
+  const text = app.find((node) => node.props.id === "dmg-guide-text");
+  assert.equal(text.props.readOnly, true);
+  assert.equal(text.props.disabled, false);
+  assert.equal(text.props.onChange, undefined);
+  assert.equal(text.props.value, "You are a coding agent powered by the {{model}} model.");
+  assert.ok(!app.nodes().some((node) => node.props.id === "dmg-guide-name"));
+  assert.ok(!app.nodes().some((node) => node.children.includes("Select models")));
+  assert.ok(!app.nodes().some((node) => /^(Delete|Duplicate) “/.test(node.props["aria-label"])));
+  assert.equal(app.store.getSnapshot().draft, null);
+  app.click("New");
+  assert.equal(Object.keys(app.store.getSnapshot().draft.data.guides).length, 1);
+  const defaultRow = app.find((node) => node.type === "Button" && node.props.title === "Default");
+  defaultRow.props.onClick();
+  assert.equal(app.find((node) => node.props.id === "dmg-guide-text").props.readOnly, true);
+  assert.ok(app.nodes().some((node) => node.children.includes("Save all")));
+  assert.ok(!app.nodes().some((node) => node.type === "footer"));
 });
 
 test("binding transfers require confirmation and mark both guides; missing models can unbind", async () => {
@@ -252,7 +486,9 @@ test("locale updates all chrome without translating guide text or names", () => 
 test("conflict requires explicit overwrite and uses the reviewed revision", async () => {
   const app = harness();
   app.edit("local");
-  app.setSnapshot({ revision: 2 });
+  const remote = structuredClone(app.store.getSnapshot().draft.base);
+  remote.guides.a.text = "remote";
+  app.setSnapshot({ revision: 2, value: { data: remote } });
   app.click("Overwrite latest with draft");
   assert.equal(app.calls.length, 0);
   const modal = app.find(
@@ -269,12 +505,16 @@ test("conflict requires explicit overwrite and uses the reviewed revision", asyn
 test("a second change during confirmation prevents overwrite and retains draft", async () => {
   const app = harness();
   app.edit("local");
-  app.setSnapshot({ revision: 2 });
+  const remote = structuredClone(app.store.getSnapshot().draft.base);
+  remote.guides.a.text = "remote";
+  app.setSnapshot({ revision: 2, value: { data: remote } });
   app.click("Overwrite latest with draft");
   const modal = app.find(
     (node) => node.type === "Modal" && node.props.title === "Overwrite the latest configuration?",
   );
-  app.setSnapshot({ revision: 3 });
+  const newer = structuredClone(remote);
+  newer.guides.a.text = "newer remote";
+  app.setSnapshot({ revision: 3, value: { data: newer } });
   modal.props.footer.children[1].props.onClick();
   await app.tick();
   assert.equal(app.calls.length, 0);
@@ -301,6 +541,26 @@ test("save rejection and exception retain draft; read-only prevents edits", asyn
   app.edit("blocked");
   assert.equal(app.store.getSnapshot().draft.data.guides.a.text, "local");
   assert.equal(app.find((node) => node.props.id === "dmg-guide-text").props.disabled, true);
+});
+
+test("an unavailable configuration keeps draft status and discard visible but disables saving", () => {
+  const app = harness();
+  app.edit("local");
+  app.setSnapshot({ status: "unavailable" });
+  assert.ok(app.nodes().some((node) => node.children.includes("1 unsaved")));
+  assert.ok(
+    app
+      .nodes()
+      .some((node) => node.children.includes("Plugin configuration is currently unavailable.")),
+  );
+  const save = app.find((node) => node.type === "Button" && node.children.includes("Save all"));
+  assert.equal(save.props.disabled, true);
+  const discard = app.find(
+    (node) => node.type === "Button" && node.children.includes("Discard all"),
+  );
+  assert.equal(discard.props.disabled, false);
+  discard.props.onClick();
+  assert.equal(app.store.getSnapshot().draft, null);
 });
 
 test("same revision after reconnect cannot silently overwrite changed content", async () => {

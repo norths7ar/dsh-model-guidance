@@ -7,36 +7,49 @@ window.__ModuleLoader__.load({
       Button,
       Input,
       Modal,
-      Menu,
       Checkbox,
+      IconPlusOutlineRegular,
+      IconCopyOutlineRegular,
+      IconTrashOutlineRegular,
+      IconCloseOutlineRegular,
     } = require("@deepseek-ai/dsh-client-ui-primitives");
     // Browser copy is registered with the host locale service; user-authored text is never translated.
     const DICTIONARIES = {
       zh: {
-        title: "模型行为指南",
-        guides: "行为指南",
+        title: "提示词",
+        guides: "提示词",
         new: "新建",
-        newGuide: "新指南",
-        unnamed: "未命名指南",
-        selectGuide: "选择行为指南",
-        editGuide: "编辑行为指南",
-        guideName: "指南名称",
-        instructions: "行为指令",
-        more: "更多操作",
-        delete: "删除指南",
-        deleteTitle: "删除这条指南？",
-        deleteHelp: "删除“{name}”及其模型绑定。保存全部后生效。",
+        newGuide: "新提示词",
+        unnamed: "未命名提示词",
+        editGuide: "编辑提示词",
+        guideName: "名称",
+        instructions: "正文",
+        subtitle: "为不同模型设置提示词与行为偏好",
+        defaultPrompt: "默认",
+        saveOne: "保存",
+        discardOne: "放弃",
+        discardAll: "放弃全部",
+        dirtyCount: "{count} 条未保存",
+        unsaved: "未保存",
+        overwriteOneHelp:
+          "用当前提示词及相关模型绑定覆盖最新配置中的对应内容。其他提示词正文不变。",
+        deleted: "待删除",
+        saveDependency: "先保存“{name}”，完成模型绑定转移",
+        defaultSource: "DSH {version} · 标准模式 · 只读",
+        defaultVariable: "{{model}} 由 DSH 填入当前模型 ID；自定义提示词也支持。",
+        promptVariables: "支持 {{model}}（模型 ID）、{{provider}}（Provider ID）。",
+        promptVariableRules:
+          "由 DSH 替换。变量名不能加空格；未知变量会报错，代码块和反斜杠不作转义。",
+        copy: "复制",
+        deleteItem: "删除“{name}”",
+        delete: "删除提示词",
+        deleteTitle: "删除这条提示词？",
+        deleteHelp: "删除“{name}”及其模型绑定。保存后生效。",
         dirty: "未保存修改",
-        noGuides: "暂无指南",
-        emptyTitle: "还没有行为指南",
-        deletedTitle: "已删除全部指南",
-        emptyHelp: "新建一条指南，填写行为指令并选择模型。",
-        deletedHelp: "删除仍在草稿中。保存全部后生效，放弃则恢复当前配置。",
-        selectedModels: "已选模型",
+        selectedModels: "适用模型",
         selectModels: "选择模型",
         modelCount: "{count} 个模型",
         unbind: "解除 {name} 的绑定",
-        noBindings: "尚未选择模型",
         unavailableModel: "当前不在模型目录中",
         boundTo: "已绑定：{name}",
         search: "搜索模型名、ID 或提供方",
@@ -52,7 +65,7 @@ window.__ModuleLoader__.load({
         close: "关闭",
         help: "帮助",
         helpText:
-          "指南正文替换绑定模型的角色指导。保存后从下一次模型步骤开始生效；正文留空的指南和未绑定的模型沿用 DSH 默认角色指导。正文按原文使用，不展开模板变量。所有指南和模型选择共同保存在一份草稿中，离开页面再回来仍会保留。",
+          "替换所选模型的角色提示词，保留 DSH 的其他系统指令和工具规则。保存后从下一次请求生效；正文留空或未绑定时使用默认内容。",
         loading: "正在加载配置…",
         refreshing: "正在重新读取配置，草稿已保留…",
         refreshFailed: "重新读取配置失败，草稿已保留。请重新连接后重试。",
@@ -68,37 +81,47 @@ window.__ModuleLoader__.load({
         saveFailed: "保存失败；草稿已保留：{error}",
         overwriteTitle: "覆盖最新配置？",
         overwriteHelp:
-          "这会用本地全部指南和绑定替换刚刚复核的最新配置，不会合并其他位置的修改。若配置再次变化，保存会被拒绝，草稿仍会保留。",
+          "这会用全部本地提示词和绑定替换你刚看到的配置，不会合并其他修改。如果配置又变了，保存会被拒绝，草稿会保留。",
         transferTitle: "转移模型绑定？",
-        transferHelp: "将 {model} 从“{from}”转移到“{to}”。保存全部后生效。",
+        transferHelp: "将 {model} 从“{from}”转移到“{to}”。保存相关提示词或保存全部后生效。",
         transfer: "转移绑定",
       },
       en: {
-        title: "Model guidance",
-        guides: "Guides",
+        title: "Prompts",
+        guides: "Prompts",
         new: "New",
-        newGuide: "New guide",
-        unnamed: "Untitled guide",
-        selectGuide: "Select guide",
-        editGuide: "Edit guide",
-        guideName: "Guide name",
-        instructions: "Instructions",
-        more: "More actions",
-        delete: "Delete guide",
-        deleteTitle: "Delete this guide?",
-        deleteHelp: "Delete “{name}” and its model bindings. This takes effect when you save all.",
+        newGuide: "New prompt",
+        unnamed: "Untitled prompt",
+        editGuide: "Edit prompt",
+        guideName: "Name",
+        instructions: "Prompt text",
+        subtitle: "Set prompts and behavioral preferences for each model",
+        defaultPrompt: "Default",
+        saveOne: "Save",
+        discardOne: "Discard",
+        discardAll: "Discard all",
+        dirtyCount: "{count} unsaved",
+        unsaved: "Unsaved",
+        overwriteOneHelp:
+          "Replace this prompt and its related model bindings in the latest configuration. Other prompt text stays unchanged.",
+        deleted: "Pending deletion",
+        saveDependency: "Save “{name}” first to move the model binding",
+        defaultSource: "DSH {version} · Standard mode · Read only",
+        defaultVariable:
+          "DSH replaces {{model}} with the current model ID. Custom prompts support it too.",
+        promptVariables: "Supports {{model}} (model ID) and {{provider}} (provider ID).",
+        promptVariableRules:
+          "Resolved by DSH. Names cannot contain spaces. Unknown variables cause an error; code blocks and backslashes do not escape them.",
+        copy: "Duplicate",
+        deleteItem: "Delete “{name}”",
+        delete: "Delete prompt",
+        deleteTitle: "Delete this prompt?",
+        deleteHelp: "Delete “{name}” and its model bindings when saved.",
         dirty: "Unsaved changes",
-        noGuides: "No guides yet",
-        emptyTitle: "No model guidance yet",
-        deletedTitle: "All guides deleted",
-        emptyHelp: "Create a guide, write instructions, and select models.",
-        deletedHelp:
-          "Deletions are still a draft. Save all to apply them, or discard to restore the current configuration.",
-        selectedModels: "Selected models",
+        selectedModels: "Applies to",
         selectModels: "Select models",
         modelCount: "{count} models",
         unbind: "Unbind {name}",
-        noBindings: "No models selected",
         unavailableModel: "Not in the current catalog",
         boundTo: "Bound to: {name}",
         search: "Search model name, ID, or provider",
@@ -115,7 +138,7 @@ window.__ModuleLoader__.load({
         close: "Close",
         help: "Help",
         helpText:
-          "Guide text replaces the role guidance of its bound models, starting with the next model step after saving. Empty guides and unbound models use DSH default role guidance. Text is used verbatim without expanding template variables. All guides and model selections share one draft, which is retained when you leave and return to this page.",
+          "Replaces the role prompt for selected models and leaves other DSH system instructions and tool rules intact. Saved changes apply from the next request. Blank prompts and unbound models use the default.",
         loading: "Loading configuration…",
         refreshing: "Reloading configuration. Your draft is retained…",
         refreshFailed:
@@ -133,13 +156,18 @@ window.__ModuleLoader__.load({
         saveFailed: "Save failed. Your draft is retained: {error}",
         overwriteTitle: "Overwrite the latest configuration?",
         overwriteHelp:
-          "This replaces all guides and bindings in the reviewed configuration with your local draft, without merging changes made elsewhere. If the configuration changes again, the save will be rejected and your draft retained.",
+          "Your draft replaces all prompts and bindings in the configuration you just reviewed. It does not merge other changes. If the configuration changes again, saving is blocked and your draft is kept.",
         transferTitle: "Move model binding?",
-        transferHelp: "Move {model} from “{from}” to “{to}”. This takes effect when you save all.",
+        transferHelp:
+          "Move {model} from “{from}” to “{to}” when you save either related prompt or save all.",
         transfer: "Move binding",
       },
     };
     const ENTRY_ID = "local-model-guidance";
+    const DEFAULT_PROMPT_ID = Symbol("built-in prompt");
+    // @deepseek-ai/dsh-web-app, presets/standard.patch.yml (DeepSeek, MIT).
+    const DEFAULT_PROMPT_VERSION = "0.2.2-rc.3";
+    const DEFAULT_PROMPT_TEXT = "You are a coding agent powered by the {{model}} model.";
     const STYLE_ID = "dsh-model-guidance/client";
     const own = (object, key) => (Object.hasOwn(object, key) ? object[key] : undefined);
     const emptyData = () => ({ guides: {}, bindings: {} });
@@ -149,33 +177,52 @@ window.__ModuleLoader__.load({
       .dmg-root { width:100%; height:100%; min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; color:var(--dsw-alias-label-primary); font-size:14px; line-height:22px; container:dmg-root / inline-size; }
       .dmg-root *, .dmg-dialog * { box-sizing:border-box; }
       .dmg-scroll { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; }
-      .dmg-pageWidth, .dmg-footerInner { width:100%; max-width:1056px; margin:auto; padding:24px 32px; }
+      .dmg-pageWidth { width:100%; max-width:1056px; margin:auto; padding:28px clamp(24px,4vw,48px); }
       .dmg-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:24px; }
       [data-platform="darwin"] .dmg-header { padding-top:var(--dsh-frame-top-clearance, 0px); }
       .dmg-title { margin:0; font-size:20px; line-height:28px; font-weight:500; }
-      .dmg-layout { display:grid; grid-template-columns:208px minmax(0,1fr); align-items:start; gap:24px; }
+      .dmg-layout { display:grid; grid-template-columns:190px minmax(0,1fr); align-items:start; gap:32px; }
       .dmg-guideRail, .dmg-editorPane, .dmg-editor, .dmg-field, .dmg-modelBody { min-width:0; display:flex; flex-direction:column; }
-      .dmg-guideRail, .dmg-editorPane { gap:12px; }
-      .dmg-railHead, .dmg-editorHead, .dmg-boundHead, .dmg-searchRow, .dmg-providerHead, .dmg-actions { display:flex; align-items:center; gap:8px; }
-      .dmg-railHead, .dmg-boundHead, .dmg-providerHead { justify-content:space-between; }
+      .dmg-editorPane { gap:12px; }
+      .dmg-titleGroup, .dmg-editorControls, .dmg-boundHead, .dmg-searchRow, .dmg-providerHead, .dmg-actions { display:flex; align-items:center; gap:8px; }
+      .dmg-editorControls, .dmg-boundHead, .dmg-providerHead { justify-content:space-between; }
+      .dmg-titleGroup { flex-direction:column; align-items:flex-start; gap:4px; }
+      .dmg-newButton, .dmg-itemActions button { height:32px; border-radius:12px; white-space:nowrap; }
+      .dmg-editorControls { flex-wrap:wrap; margin-top:24px; padding-top:16px; border-top:1px solid var(--dsw-alias-border-l4); }
+      .dmg-itemHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:36px; }
+      .dmg-itemActions { display:flex; align-items:center; gap:8px; flex:none; white-space:nowrap; }
+      .dmg-itemActions > span { width:48px; text-align:right; }
+      .dmg-mobileSelect { display:none; }
+      .dmg-mobileRail { display:none; align-items:center; gap:6px; }
+      .dmg-mobileRail .dmg-mobileSelect { min-width:0; flex:1; }
+      .dmg-guideRow[data-deleted="true"] .dmg-guideName { text-decoration:line-through; color:var(--dsw-alias-label-tertiary); }
+      .dmg-modelPickerLink, .dmg-dependency { font:inherit; font-size:12px; color:var(--dsw-alias-label-secondary); background:none; border:0; padding:0; text-align:left; cursor:pointer; }
+      .dmg-modelPickerLink:hover, .dmg-modelPickerLink:focus-visible, .dmg-dependency:hover { text-decoration:underline; }
+      .dmg-modelPickerLink:disabled { cursor:default; opacity:.6; }
+      .dmg-editorControls > .dmg-muted { flex:1 1 150px; }
       .dmg-railTitle, .dmg-fieldLabel, .dmg-providerName { margin:0; font-size:12px; line-height:18px; font-weight:500; color:var(--dsw-alias-label-secondary); }
       .dmg-guideList { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:2px; }
-      .dmg-guideRow { min-width:0; }
-      .dmg-guideSelect { width:100%; justify-content:flex-start; text-align:left; }
-      .dmg-guideRow[data-active="true"] { border-radius:var(--dsw-radius-md); background:var(--dsw-specific-sidebar-nav-item-active, var(--dsw-alias-interactive-bg-hover-solid)); }
+      .dmg-guideRow { min-width:0; display:flex; align-items:center; border-radius:var(--dsw-radius-md); }
+      /* Name hover highlights the row; the selected row takes precedence. */
+      .dmg-guideRow:where(:has(> .dmg-guideSelect:hover), :has(> .dmg-guideSelect:focus-visible)) { background:var(--dsw-alias-interactive-bg-hover); }
+      /* Only suppress the name button's fill; action icons keep host hover/press feedback. */
+      .dmg-root .dmg-guideRow > .dmg-guideSelect,
+      .dmg-root .dmg-guideRow > .dmg-guideSelect:hover:not(:disabled),
+      .dmg-root .dmg-guideRow > .dmg-guideSelect:active:not(:disabled) { background:transparent; }
+      .dmg-guideSelect { flex:1; min-width:0; justify-content:flex-start; text-align:left; }
+      .dmg-iconButton { flex:none; }
+      .dmg-guideRow[data-active="true"] { background:var(--dsw-specific-sidebar-nav-item-active, var(--dsw-alias-interactive-bg-hover-solid)); }
       .dmg-guideName { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .dmg-dirty { flex:none; width:6px; height:6px; border-radius:50%; background:var(--dsw-alias-state-warn-primary); }
-      .dmg-editor { gap:18px; padding:20px; border:.5px solid var(--dsw-alias-settings-card-stroke); border-radius:var(--dsw-radius-xl); background:var(--dsw-alias-settings-card-fill); }
-      .dmg-editorHead { align-items:flex-end; }
-      .dmg-nameField { flex:1; }
+      .dmg-editor { gap:24px; }
       .dmg-field { gap:6px; }
-      .dmg-nameInput { width:100%; min-width:0; }
+      .dmg-defaultMeta { display:grid; gap:2px; }
+      .dmg-nameInput { width:180px; max-width:220px; min-width:60px; flex:0 1 180px; border:1px solid var(--dsw-alias-border-l4); }
       .dmg-searchInput { flex:1; min-width:0; }
       .dmg-searchRow > button { flex:none; white-space:nowrap; }
-      .dmg-textarea, .dmg-select { font:inherit; color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-1); border:.5px solid var(--dsw-alias-border-l4); border-radius:var(--dsw-radius-md); }
-      .dmg-textarea { width:100%; min-height:280px; padding:10px; line-height:22px; resize:vertical; }
-      .dmg-select { width:100%; min-width:0; height:36px; padding:0 10px; }
-      .dmg-textarea:focus-visible, .dmg-select:focus-visible { outline:2px solid var(--dsw-focus-ring-color); outline-offset:1px; }
+      .dmg-textarea { font:inherit; color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-1); border:.5px solid var(--dsw-alias-border-l4); border-radius:var(--dsw-radius-md); }
+      .dmg-textarea { width:100%; height:clamp(280px,42vh,480px); padding:12px; line-height:24px; resize:none; }
+      .dmg-textarea:focus-visible { outline:none; border-color:var(--dsw-focus-ring-color); }
       .dmg-textarea:disabled { opacity:.6; resize:none; }
       .dmg-bindings { display:flex; flex-direction:column; gap:8px; }
       .dmg-boundList { display:flex; flex-wrap:wrap; gap:6px; max-height:160px; overflow:auto; }
@@ -193,16 +240,9 @@ window.__ModuleLoader__.load({
       .dmg-modelRow:hover { background:var(--dsw-alias-interactive-bg-hover); }
       .dmg-modelBody { gap:2px; overflow-wrap:anywhere; }
       .dmg-modelName { font-size:13px; line-height:20px; }
-      .dmg-blank { padding:40px 8px; text-align:center; }
-      .dmg-blank h2 { margin:0 0 8px; font-size:16px; font-weight:500; }
-      .dmg-footer { flex:none; border-top:.5px solid var(--dsw-alias-border-l2); }
-      .dmg-footerInner { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-block:12px; }
       .dmg-actions { flex-wrap:wrap; justify-content:flex-end; }
-      .dmg-mobileBar { display:none; }
-      .dmg-mobileBar select { flex:1; width:auto; min-width:0; }
-      .dmg-mobileBar > button { flex:none; white-space:nowrap; }
-      @container dmg-root (max-width:760px) { .dmg-layout { grid-template-columns:minmax(0,1fr); } .dmg-guideRail { display:none; } .dmg-mobileBar { display:flex; gap:8px; } }
-      @container dmg-root (max-width:520px) { .dmg-pageWidth, .dmg-footerInner { padding-inline:16px; } .dmg-editor { padding:14px; } .dmg-footerInner { flex-direction:column; align-items:stretch; } }
+      @container dmg-root (max-width:760px) { .dmg-layout { grid-template-columns:160px minmax(0,1fr); gap:24px; } .dmg-itemHeader { gap:8px; } .dmg-itemActions { gap:4px; } }
+      @container dmg-root (max-width:620px) { .dmg-layout { grid-template-columns:minmax(0,1fr); gap:20px; } .dmg-guideList { display:none; } .dmg-mobileRail { display:flex; } .dmg-mobileSelect { display:block; width:100%; height:36px; font:inherit; border:1px solid var(--dsw-alias-border-l4); border-radius:8px; background:var(--dsw-alias-bg-layer-1); color:inherit; } }
     `;
 
     function equivalent(a, b) {
@@ -239,6 +279,103 @@ window.__ModuleLoader__.load({
 
     function cleanDraft(draft) {
       return equivalent(draft.data, draft.base) ? null : draft;
+    }
+
+    // A binding transfer is one route change, shared by its old and new owner.
+    function routeChanges(base, data, id) {
+      const changes = [];
+      for (const provider of new Set([
+        ...Object.keys(base.bindings),
+        ...Object.keys(data.bindings),
+      ])) {
+        const before = own(base.bindings, provider) ?? {};
+        const after = own(data.bindings, provider) ?? {};
+        for (const model of new Set([...Object.keys(before), ...Object.keys(after)])) {
+          const from = own(before, model);
+          const to = own(after, model);
+          if (from !== to && (id === undefined || from === id || to === id)) {
+            changes.push({ provider, model, from, to });
+          }
+        }
+      }
+      return changes;
+    }
+
+    function setRoute(data, provider, model, owner) {
+      const models = { ...(own(data.bindings, provider) ?? {}) };
+      if (owner === undefined) delete models[model];
+      else models[model] = owner;
+      if (Object.keys(models).length) data.bindings[provider] = models;
+      else delete data.bindings[provider];
+    }
+
+    function projectDraft(target, draft, id) {
+      const result = structuredClone(target);
+      const ids =
+        id === undefined
+          ? new Set([...Object.keys(draft.base.guides), ...Object.keys(draft.data.guides)])
+          : [id];
+      for (const key of ids) {
+        const before = own(draft.base.guides, key);
+        const after = own(draft.data.guides, key);
+        if (id === undefined && equivalent(before, after)) continue;
+        if (after === undefined) delete result.guides[key];
+        else result.guides[key] = structuredClone(after);
+      }
+      for (const { provider, model, to } of routeChanges(draft.base, draft.data, id)) {
+        if (
+          id === undefined &&
+          to !== undefined &&
+          own(result.guides, to) === undefined &&
+          own(draft.data.guides, to) !== undefined
+        ) {
+          result.guides[to] = structuredClone(draft.data.guides[to]);
+        }
+        setRoute(result, provider, model, to);
+      }
+      for (const [provider, models] of Object.entries(result.bindings)) {
+        for (const [model, owner] of Object.entries(models)) {
+          const removed =
+            own(draft.base.guides, owner) !== undefined &&
+            own(draft.data.guides, owner) === undefined;
+          if (removed && (id === undefined || owner === id))
+            setRoute(result, provider, model, undefined);
+        }
+      }
+      result.guides = Object.fromEntries(
+        [...new Set([...Object.keys(draft.data.guides), ...Object.keys(result.guides)])]
+          .filter((key) => own(result.guides, key) !== undefined)
+          .map((key) => [key, result.guides[key]]),
+      );
+      return result;
+    }
+
+    function saveDependencies(draft, target, id) {
+      if (id === undefined) return [];
+      return [
+        ...new Set(
+          routeChanges(draft.base, draft.data, id)
+            .map(({ to }) => to)
+            .filter(
+              (owner) =>
+                owner !== undefined && owner !== id && own(target.guides, owner) === undefined,
+            ),
+        ),
+      ];
+    }
+
+    function discardGuideDraft(draft, id) {
+      const next = { ...draft, data: structuredClone(draft.data) };
+      const original = own(draft.base.guides, id);
+      if (original === undefined) delete next.data.guides[id];
+      else next.data.guides[id] = structuredClone(original);
+      for (const { provider, model, from } of routeChanges(draft.base, draft.data, id)) {
+        // A different prompt's pending deletion keeps its routes unbound.
+        const owner =
+          from !== undefined && own(next.data.guides, from) !== undefined ? from : undefined;
+        setRoute(next.data, provider, model, owner);
+      }
+      return cleanDraft(next);
     }
 
     function createSharedStore(initial) {
@@ -412,9 +549,7 @@ window.__ModuleLoader__.load({
       React.useSyncExternalStore(localeSource.subscribe, localeSource.getSnapshot);
       const nameInput = React.useRef(null);
       const lastFocusToken = React.useRef(ui.focusNameToken);
-      const [openMenuId, setOpenMenuId] = React.useState(null);
       const [pickerOpen, setPickerOpen] = React.useState(false);
-      const [helpOpen, setHelpOpen] = React.useState(false);
       const [confirmation, setConfirmation] = React.useState(null);
 
       React.useEffect(() => {
@@ -431,25 +566,27 @@ window.__ModuleLoader__.load({
       const draftData = ui.draft?.data;
       const data = draftData ?? accepted;
       const guides = data.guides ?? {};
-      const guideIds = Object.keys(guides);
+      const base = ui.draft?.base ?? accepted;
+      const guideIds = [...new Set([...Object.keys(guides), ...Object.keys(base.guides)])];
       const activeId =
-        ui.selectedId !== null && own(guides, ui.selectedId) !== undefined
+        ui.selectedId === DEFAULT_PROMPT_ID ||
+        (ui.selectedId !== null && guideIds.includes(ui.selectedId))
           ? ui.selectedId
-          : guideIds[0];
-      const guide = activeId === undefined ? undefined : own(guides, activeId);
+          : (guideIds[0] ?? DEFAULT_PROMPT_ID);
+      const builtIn = activeId === DEFAULT_PROMPT_ID;
+      const defaultPrompt = { name: t("defaultPrompt"), text: DEFAULT_PROMPT_TEXT };
+      const deleted = !builtIn && own(guides, activeId) === undefined;
+      const guide = builtIn ? defaultPrompt : (own(guides, activeId) ?? own(base.guides, activeId));
       const ready = snapshot.status === "ready";
       const editable = ready && snapshot.writable === true && !ui.saving && !ui.refreshing;
-      const conflicted =
-        ui.draft !== null &&
-        (snapshot.revision !== ui.draft.revision || !equivalent(accepted, ui.draft.base));
+      const conflicted = ui.draft !== null && !equivalent(accepted, ui.draft.base);
       const groups = catalogState.groups ?? [];
       const failures = catalogState.failures ?? [];
       const allRows = modelRows(groups, accepted.bindings, draftData?.bindings);
       const ownerOf = (provider, model) => own(own(data.bindings ?? {}, provider) ?? {}, model);
-      const boundRows =
-        activeId === undefined
-          ? []
-          : allRows.filter(([, row]) => ownerOf(row.provider, row.model) === activeId);
+      const boundRows = builtIn
+        ? []
+        : allRows.filter(([, row]) => ownerOf(row.provider, row.model) === activeId);
       const query = ui.search.trim().toLowerCase();
       const filteredRows =
         query === ""
@@ -480,6 +617,7 @@ window.__ModuleLoader__.load({
       }
 
       function openGuide(id) {
+        setPickerOpen(false);
         guidanceStore.update((previous) =>
           previous.selectedId === id ? previous : { ...previous, selectedId: id },
         );
@@ -496,23 +634,26 @@ window.__ModuleLoader__.load({
         });
       }
 
-      function addGuide() {
-        let id;
-        const currentData = guidanceStore.getSnapshot().draft?.data ?? accepted;
-        do {
-          id =
-            "guide-" +
-            (globalThis.crypto?.randomUUID?.() ??
-              Date.now().toString(36) + "-" + Math.random().toString(36).slice(2));
-        } while (own(currentData.guides ?? {}, id) !== undefined);
-
+      function addGuide(sourceId) {
         guidanceStore.update((previous) => {
           if (previous.saving || previous.refreshing) return previous;
           const latest = form.getSnapshot();
           if (latest.status !== "ready" || latest.writable !== true) return previous;
           const next = makeDraft(previous, latest);
+          const source =
+            sourceId === undefined
+              ? { name: t("newGuide"), text: "" }
+              : own(next.data.guides ?? {}, sourceId);
+          if (source === undefined) return previous;
+          let id;
+          do {
+            id =
+              "guide-" +
+              (globalThis.crypto?.randomUUID?.() ??
+                Date.now().toString(36) + "-" + Math.random().toString(36).slice(2));
+          } while (own(next.data.guides ?? {}, id) !== undefined);
           next.data.guides = {
-            [id]: { name: t("newGuide"), text: "" },
+            [id]: { name: source.name ?? "", text: source.text ?? "" },
             ...(next.data.guides ?? {}),
           };
           return {
@@ -526,7 +667,7 @@ window.__ModuleLoader__.load({
       }
 
       function deleteGuide(id) {
-        setOpenMenuId(null);
+        if (id === DEFAULT_PROMPT_ID) return;
         guidanceStore.update((previous) => {
           if (previous.saving || previous.refreshing) return previous;
           const latest = form.getSnapshot();
@@ -548,14 +689,14 @@ window.__ModuleLoader__.load({
           return {
             ...previous,
             draft: cleanDraft(next),
-            selectedId: previous.selectedId === id ? null : previous.selectedId,
+            selectedId: activeId === id ? id : previous.selectedId,
             message: null,
           };
         });
       }
 
       function toggleBinding(provider, model, checked, confirmedOwner) {
-        if (activeId === undefined) return;
+        if (builtIn || deleted) return;
         const owner = ownerOf(provider, model);
         if (checked && owner !== undefined && owner !== activeId && confirmedOwner !== owner) {
           setConfirmation({ kind: "transfer", provider, model, owner, target: activeId });
@@ -588,21 +729,39 @@ window.__ModuleLoader__.load({
             message: null,
           };
         });
-        setOpenMenuId(null);
       }
 
-      async function saveDraft(reviewed) {
+      function discardCurrent() {
+        guidanceStore.update((previous) => {
+          if (previous.saving || previous.refreshing || !previous.draft || builtIn) return previous;
+          return { ...previous, draft: discardGuideDraft(previous.draft, activeId), message: null };
+        });
+      }
+
+      function requestSave(id) {
+        if (conflicted) {
+          const latest = form.getSnapshot();
+          setConfirmation({
+            kind: "overwrite",
+            target: id,
+            reviewed: {
+              revision: latest.revision,
+              data: structuredClone(latest.value?.data ?? emptyData()),
+            },
+          });
+        } else void saveDraft(undefined, id);
+      }
+
+      async function saveDraft(reviewed, id) {
         const before = guidanceStore.getSnapshot();
         if (before.saving || before.refreshing || before.draft === null) return;
         const latest = form.getSnapshot();
         if (latest.status !== "ready" || latest.writable !== true) return;
-        // A reconnect may reset the host's revision counter. Compare the accepted
-        // content as well, and bind overwrite consent to the exact reviewed state.
+        // Host reloads can change the revision without changing prompt data.
+        // Compare content for conflicts; fence the write with the latest revision.
         const expected = reviewed ?? { revision: before.draft.revision, data: before.draft.base };
-        if (
-          latest.revision !== expected.revision ||
-          !equivalent(latest.value?.data ?? emptyData(), expected.data)
-        ) {
+        if (saveDependencies(before.draft, expected.data, id).length) return;
+        if (!equivalent(latest.value?.data ?? emptyData(), expected.data)) {
           guidanceStore.update((previous) => ({
             ...previous,
             message: {
@@ -613,6 +772,8 @@ window.__ModuleLoader__.load({
           return;
         }
 
+        const committed =
+          id === undefined ? before.draft.data : projectDraft(expected.data, before.draft, id);
         const acquisition = { started: false };
         guidanceStore.update((previous) => {
           if (previous.saving || previous.refreshing || previous.draft === null) return previous;
@@ -623,13 +784,21 @@ window.__ModuleLoader__.load({
 
         try {
           const ok = await form.mutate(
-            [{ op: "set", path: ["data"], value: before.draft.data }],
-            expected.revision,
+            [{ op: "set", path: ["data"], value: committed }],
+            latest.revision,
           );
           guidanceStore.update((previous) => ({
             ...previous,
             saving: false,
-            draft: ok ? null : previous.draft,
+            draft: !ok
+              ? previous.draft
+              : id === undefined
+                ? null
+                : cleanDraft({
+                    base: structuredClone(committed),
+                    data: projectDraft(committed, before.draft),
+                    revision: form.getSnapshot().revision,
+                  }),
             message: ok ? null : { kind: "error", key: "saveRejected" },
           }));
         } catch (error) {
@@ -645,10 +814,26 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const base = ui.draft?.base ?? accepted;
       const isGuideDirty = (id) => !equivalent(guideState(data, id), guideState(base, id));
-      const nameOf = (id) => own(guides, id)?.name || t("unnamed");
+      const dirtyCount = guideIds.filter(isGuideDirty).length;
+      const currentDirty = !builtIn && isGuideDirty(activeId);
+      const dependencies =
+        ui.draft && !builtIn ? saveDependencies(ui.draft, accepted, activeId) : [];
+      const nameOf = (id) =>
+        id === DEFAULT_PROMPT_ID
+          ? defaultPrompt.name
+          : (own(guides, id) ?? own(base.guides, id))?.name || t("unnamed");
       const button = (label, onClick, props = {}) => h(Button, { onClick, ...props }, label);
+      const iconButton = (icon, label, onClick, disabled) =>
+        button(null, onClick, {
+          className: "dmg-iconButton",
+          icon: h(icon, { size: 16, "aria-hidden": true }),
+          variant: "ghost",
+          size: "sm",
+          title: label,
+          "aria-label": label,
+          disabled,
+        });
       const statusText = ui.refreshing
         ? t(ui.refreshError ? "refreshFailed" : "refreshing")
         : ui.saving
@@ -664,15 +849,11 @@ window.__ModuleLoader__.load({
                   : "";
       const changeField = (field, value) =>
         editGuide((next) => {
-          const target = own(next.guides, activeId);
+          if (builtIn) return false;
+          const target = own(next.guides ?? {}, activeId);
           if (target === undefined) return false;
           target[field] = value;
         });
-      const createButton = () =>
-        button(t("new"), addGuide, { variant: "outline", size: "sm", disabled: !editable });
-      const guideOptions = guideIds.map((id) =>
-        h("option", { key: id, value: id }, nameOf(id) + (isGuideDirty(id) ? " •" : "")),
-      );
       const modelSummary = h(
         "section",
         { className: "dmg-bindings", "aria-label": t("selectedModels") },
@@ -680,17 +861,18 @@ window.__ModuleLoader__.load({
           "div",
           { className: "dmg-boundHead" },
           h(
-            "span",
-            { className: "dmg-fieldLabel" },
+            "button",
+            {
+              type: "button",
+              className: "dmg-modelPickerLink",
+              disabled: !editable || deleted,
+              "aria-label": t("selectModels"),
+              onClick: () => setPickerOpen(true),
+            },
             t("selectedModels"),
             " · ",
-            t("modelCount", { count: boundRows.length }),
+            boundRows.length,
           ),
-          button(t("selectModels"), () => setPickerOpen(true), {
-            size: "sm",
-            variant: "outline",
-            disabled: !editable,
-          }),
         ),
         boundRows.length
           ? h(
@@ -717,90 +899,100 @@ window.__ModuleLoader__.load({
                     !row.available &&
                       h("span", { className: "dmg-warning" }, " · ", t("unavailableModel")),
                   ),
-                  button("×", () => toggleBinding(row.provider, row.model, false), {
-                    size: "sm",
-                    disabled: !editable,
-                    "aria-label": t("unbind", { name: row.modelName }),
-                  }),
+                  iconButton(
+                    IconCloseOutlineRegular,
+                    t("unbind", { name: row.modelName }),
+                    () => toggleBinding(row.provider, row.model, false),
+                    !editable,
+                  ),
                 ),
               ),
             )
-          : h("p", { className: "dmg-muted" }, t("noBindings")),
+          : null,
       );
-      const editor =
-        guide === undefined
+      const editor = h(
+        "section",
+        { className: "dmg-editor", "aria-label": t("editGuide") },
+        h(
+          "div",
+          { className: "dmg-itemHeader" },
+          builtIn
+            ? h("span", null, guide.name)
+            : h(Input, {
+                ref: nameInput,
+                id: "dmg-guide-name",
+                className: "dmg-nameInput",
+                value: guide.name ?? "",
+                disabled: !editable || deleted,
+                "aria-label": t("guideName"),
+                autoComplete: "off",
+                onChange: (event) => changeField("name", event.target.value),
+              }),
+          !builtIn &&
+            h(
+              "div",
+              { className: "dmg-itemActions" },
+              h(
+                "span",
+                { className: "dmg-muted dmg-warning", role: "status" },
+                currentDirty ? t("unsaved") : "",
+              ),
+              button(t("discardOne"), discardCurrent, {
+                variant: "ghost",
+                disabled: ui.saving || ui.refreshing || !currentDirty,
+              }),
+              button(t("saveOne"), () => requestSave(activeId), {
+                variant: "primary",
+                disabled: !editable || !currentDirty || dependencies.length > 0,
+              }),
+            ),
+        ),
+        ...dependencies.map((id) =>
+          h(
+            "button",
+            { key: id, type: "button", className: "dmg-dependency", onClick: () => openGuide(id) },
+            t("saveDependency", { name: nameOf(id) }),
+          ),
+        ),
+        deleted && h("p", { className: "dmg-muted" }, t("deleted")),
+        builtIn
           ? h(
               "div",
-              { className: "dmg-blank" },
-              h("h2", null, t(ui.draft === null ? "emptyTitle" : "deletedTitle")),
+              { className: "dmg-defaultMeta" },
               h(
                 "p",
                 { className: "dmg-muted" },
-                t(ui.draft === null ? "emptyHelp" : "deletedHelp"),
+                t("defaultSource", { version: DEFAULT_PROMPT_VERSION }),
               ),
+              h("p", { className: "dmg-muted" }, t("defaultVariable")),
             )
-          : h(
-              "section",
-              { className: "dmg-editor", "aria-label": t("editGuide") },
-              h(
-                "div",
-                { className: "dmg-editorHead" },
-                h(
-                  "label",
-                  { className: "dmg-field dmg-nameField", htmlFor: "dmg-guide-name" },
-                  h("span", { className: "dmg-fieldLabel" }, t("guideName")),
-                  h(Input, {
-                    ref: nameInput,
-                    id: "dmg-guide-name",
-                    className: "dmg-nameInput",
-                    value: guide.name ?? "",
-                    disabled: !editable,
-                    autoComplete: "off",
-                    onChange: (event) => changeField("name", event.target.value),
-                  }),
-                ),
-                h(Menu, {
-                  open: openMenuId === activeId,
-                  onClose: () => setOpenMenuId(null),
-                  align: "end",
-                  portal: true,
-                  autoFocus: true,
-                  anchor: button(
-                    "⋯",
-                    () => setOpenMenuId(openMenuId === activeId ? null : activeId),
-                    {
-                      disabled: !editable,
-                      "aria-label": t("more"),
-                      "aria-haspopup": "menu",
-                      "aria-expanded": openMenuId === activeId,
-                    },
-                  ),
-                  items: [{ id: "delete", label: t("delete"), danger: true }],
-                  onSelect: () => {
-                    setOpenMenuId(null);
-                    setConfirmation({ kind: "delete", target: activeId });
-                  },
-                }),
-              ),
-              modelSummary,
-              h(
-                "label",
-                { className: "dmg-field", htmlFor: "dmg-guide-text" },
-                h("span", { className: "dmg-fieldLabel" }, t("instructions")),
-                h("textarea", {
-                  id: "dmg-guide-text",
-                  className: "dmg-textarea",
-                  rows: 12,
-                  value: guide.text ?? "",
-                  disabled: !editable,
-                  onChange: (event) => changeField("text", event.target.value),
-                }),
-              ),
-            );
+          : !deleted && modelSummary,
+        h(
+          "label",
+          { className: "dmg-field", htmlFor: "dmg-guide-text" },
+          h("span", { className: "dmg-fieldLabel" }, t("instructions")),
+          !builtIn &&
+            h(
+              "span",
+              { className: "dmg-muted", title: t("promptVariableRules") },
+              t("promptVariables"),
+            ),
+          h("textarea", {
+            id: "dmg-guide-text",
+            className: "dmg-textarea",
+            rows: 12,
+            value: guide.text ?? "",
+            disabled: !builtIn && (!editable || deleted),
+            readOnly: builtIn || deleted,
+            onChange:
+              builtIn || deleted ? undefined : (event) => changeField("text", event.target.value),
+          }),
+        ),
+      );
       const picker = h(
         Modal,
         {
-          open: pickerOpen && guide !== undefined,
+          open: pickerOpen && !builtIn && !deleted,
           onClose: () => setPickerOpen(false),
           title: t("selectModels"),
           closeLabel: t("close"),
@@ -921,7 +1113,7 @@ window.__ModuleLoader__.load({
           title: t(confirmation.kind + "Title"),
           description:
             confirmation.kind === "overwrite"
-              ? t("overwriteHelp")
+              ? t(confirmation.target === undefined ? "overwriteHelp" : "overwriteOneHelp")
               : confirmation.kind === "delete"
                 ? t("deleteHelp", { name: nameOf(confirmation.target) })
                 : t("transferHelp", {
@@ -937,7 +1129,7 @@ window.__ModuleLoader__.load({
               t(confirmation.kind),
               () => {
                 if (confirmation.kind === "overwrite") {
-                  void saveDraft(confirmation.reviewed);
+                  void saveDraft(confirmation.reviewed, confirmation.target);
                 } else if (confirmation.kind === "delete") {
                   deleteGuide(confirmation.target);
                 } else if (confirmation.target === activeId) {
@@ -954,6 +1146,47 @@ window.__ModuleLoader__.load({
             ),
           ),
         });
+      const editorControls = h(
+        "div",
+        { className: "dmg-editorControls" },
+        h(
+          "p",
+          {
+            className:
+              "dmg-muted" +
+              (conflicted ? " dmg-warning" : ui.message?.kind === "error" ? " dmg-error" : ""),
+            role: "status",
+            "aria-live": "polite",
+          },
+          ui.refreshing || ui.saving || conflicted || ui.message || (ready && !snapshot.writable)
+            ? statusText
+            : t("dirtyCount", { count: dirtyCount }),
+        ),
+        h(
+          "div",
+          { className: "dmg-actions" },
+          button(t(conflicted ? "loadLatest" : "discardAll"), discardDraft, {
+            variant: "ghost",
+            disabled: ui.saving || ui.refreshing || ui.draft === null,
+          }),
+          button(
+            t(ui.saving ? "saving" : conflicted ? "overwrite" : "save"),
+            () => {
+              if (conflicted) {
+                const latest = form.getSnapshot();
+                setConfirmation({
+                  kind: "overwrite",
+                  reviewed: {
+                    revision: latest.revision,
+                    data: structuredClone(latest.value?.data ?? emptyData()),
+                  },
+                });
+              } else void saveDraft();
+            },
+            { variant: "primary", disabled: !editable || ui.draft === null },
+          ),
+        ),
+      );
       return h(
         "section",
         { className: "dmg-root", "aria-label": t("title"), "aria-busy": ui.saving || undefined },
@@ -966,14 +1199,29 @@ window.__ModuleLoader__.load({
             h(
               "header",
               { className: "dmg-header" },
-              h("h1", { className: "dmg-title" }, t("title")),
-              button(t("help"), () => setHelpOpen(true), { size: "sm" }),
+              h(
+                "div",
+                { className: "dmg-titleGroup" },
+                h("h1", { className: "dmg-title" }, t("title")),
+                h("p", { className: "dmg-muted" }, t("subtitle")),
+              ),
+              button(t("new"), () => addGuide(), {
+                icon: h(IconPlusOutlineRegular, { size: 16, "aria-hidden": true }),
+                variant: "primary",
+                className: "dmg-newButton",
+                size: "sm",
+                disabled: !editable,
+              }),
             ),
             !ready
               ? h(
-                  "p",
-                  { className: "dmg-muted", role: "status" },
-                  t(snapshot.status === "unavailable" ? "unavailable" : "loading"),
+                  "div",
+                  { className: "dmg-editorPane" },
+                  h(
+                    "p",
+                    { className: "dmg-muted", role: "status" },
+                    t(snapshot.status === "unavailable" ? "unavailable" : "loading"),
+                  ),
                 )
               : h(
                   "div",
@@ -983,27 +1231,68 @@ window.__ModuleLoader__.load({
                     { className: "dmg-guideRail", "aria-label": t("guides") },
                     h(
                       "div",
-                      { className: "dmg-railHead" },
-                      h("h2", { className: "dmg-railTitle" }, t("guides")),
-                      createButton(),
+                      { className: "dmg-mobileRail" },
+                      h(
+                        "select",
+                        {
+                          className: "dmg-mobileSelect",
+                          "aria-label": t("guides"),
+                          value: builtIn ? "" : activeId,
+                          onChange: (event) => openGuide(event.target.value || DEFAULT_PROMPT_ID),
+                        },
+                        ...[DEFAULT_PROMPT_ID, ...guideIds].map((id) =>
+                          h(
+                            "option",
+                            {
+                              key: id === DEFAULT_PROMPT_ID ? "default" : id,
+                              value: id === DEFAULT_PROMPT_ID ? "" : id,
+                            },
+                            nameOf(id) +
+                              (id !== DEFAULT_PROMPT_ID && isGuideDirty(id)
+                                ? " · " + t(own(guides, id) ? "unsaved" : "deleted")
+                                : ""),
+                          ),
+                        ),
+                      ),
+                      !builtIn &&
+                        !deleted &&
+                        iconButton(
+                          IconCopyOutlineRegular,
+                          t("copy"),
+                          () => addGuide(activeId),
+                          !editable,
+                        ),
+                      !builtIn &&
+                        !deleted &&
+                        iconButton(
+                          IconTrashOutlineRegular,
+                          t("deleteItem", { name: nameOf(activeId) }),
+                          () => setConfirmation({ kind: "delete", target: activeId }),
+                          !editable,
+                        ),
                     ),
                     h(
                       "ul",
                       { className: "dmg-guideList" },
-                      ...guideIds.map((id) =>
+                      ...[DEFAULT_PROMPT_ID, ...guideIds].map((id) =>
                         h(
                           "li",
                           {
-                            key: id,
+                            key: id === DEFAULT_PROMPT_ID ? "built-in" : "custom:" + id,
                             className: "dmg-guideRow",
                             "data-active": id === activeId ? "true" : "false",
+                            "data-deleted":
+                              id !== DEFAULT_PROMPT_ID && own(guides, id) === undefined
+                                ? "true"
+                                : undefined,
                           },
                           button(
                             h(
                               React.Fragment,
                               null,
                               h("span", { className: "dmg-guideName" }, nameOf(id)),
-                              isGuideDirty(id) &&
+                              id !== DEFAULT_PROMPT_ID &&
+                                isGuideDirty(id) &&
                                 h("span", {
                                   className: "dmg-dirty",
                                   role: "img",
@@ -1013,96 +1302,39 @@ window.__ModuleLoader__.load({
                             () => openGuide(id),
                             {
                               className: "dmg-guideSelect",
+                              variant: "ghost",
+                              size: "sm",
+                              title: nameOf(id),
                               "aria-current": id === activeId ? "page" : undefined,
                             },
                           ),
+                          id !== DEFAULT_PROMPT_ID &&
+                            own(guides, id) !== undefined &&
+                            iconButton(
+                              IconCopyOutlineRegular,
+                              t("copy", { name: nameOf(id) }),
+                              () => addGuide(id),
+                              !editable,
+                            ),
+                          id !== DEFAULT_PROMPT_ID &&
+                            own(guides, id) !== undefined &&
+                            iconButton(
+                              IconTrashOutlineRegular,
+                              t("deleteItem", { name: nameOf(id) }),
+                              () => setConfirmation({ kind: "delete", target: id }),
+                              !editable,
+                            ),
                         ),
                       ),
                     ),
-                    !guideIds.length && h("p", { className: "dmg-muted" }, t("noGuides")),
                   ),
-                  h(
-                    "div",
-                    { className: "dmg-editorPane" },
-                    h(
-                      "div",
-                      { className: "dmg-mobileBar" },
-                      h(
-                        "select",
-                        {
-                          className: "dmg-select",
-                          "aria-label": t("selectGuide"),
-                          value: activeId ?? "",
-                          onChange: (event) => openGuide(event.target.value),
-                        },
-                        guideOptions.length
-                          ? guideOptions
-                          : h("option", { value: "" }, t("noGuides")),
-                      ),
-                      createButton(),
-                    ),
-                    editor,
-                  ),
+                  h("div", { className: "dmg-editorPane" }, editor),
                 ),
+            editorControls,
           ),
         ),
-        (ui.draft !== null || ui.saving || statusText) &&
-          h(
-            "footer",
-            { className: "dmg-footer" },
-            h(
-              "div",
-              { className: "dmg-footerInner" },
-              h(
-                "p",
-                {
-                  className:
-                    "dmg-muted" +
-                    (conflicted
-                      ? " dmg-warning"
-                      : ui.message?.kind === "error"
-                        ? " dmg-error"
-                        : ""),
-                  role: "status",
-                  "aria-live": "polite",
-                },
-                statusText,
-              ),
-              h(
-                "div",
-                { className: "dmg-actions" },
-                button(t(conflicted ? "loadLatest" : "discard"), discardDraft, {
-                  disabled: ui.saving || ui.refreshing || ui.draft === null,
-                }),
-                button(
-                  t(ui.saving ? "saving" : conflicted ? "overwrite" : "save"),
-                  () => {
-                    if (conflicted) {
-                      const latest = form.getSnapshot();
-                      setConfirmation({
-                        kind: "overwrite",
-                        reviewed: {
-                          revision: latest.revision,
-                          data: structuredClone(latest.value?.data ?? emptyData()),
-                        },
-                      });
-                    } else void saveDraft();
-                  },
-                  { variant: "primary", disabled: !editable || ui.draft === null },
-                ),
-              ),
-            ),
-          ),
         picker,
         confirm,
-        h(Modal, {
-          open: helpOpen,
-          onClose: () => setHelpOpen(false),
-          title: t("help"),
-          closeLabel: t("close"),
-          description: t("helpText"),
-          className: "dmg-dialog",
-        }),
       );
     }
 

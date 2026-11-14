@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Model guidance",
-    "description": "Bind and edit behavioral instructions for each model."
+    "title": "Prompts",
+    "description": "Set prompts and behavioral preferences for different models."
   }
 }
