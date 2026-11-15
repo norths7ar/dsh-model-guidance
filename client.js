@@ -12,6 +12,7 @@ window.__ModuleLoader__.load({
       IconCopyOutlineRegular,
       IconTrashOutlineRegular,
       IconCloseOutlineRegular,
+      IconRefreshOutlineRegular,
     } = require("@deepseek-ai/dsh-client-ui-primitives");
     // Browser copy is registered with the host locale service; user-authored text is never translated.
     const DICTIONARIES = {
@@ -49,15 +50,17 @@ window.__ModuleLoader__.load({
         selectedModels: "适用模型",
         selectModels: "选择模型",
         modelCount: "{count} 个模型",
+        modelCountOne: "{count} 个模型",
+        selectionCount: "已选 {count} 个模型",
         unbind: "解除 {name} 的绑定",
         unavailableModel: "当前不在模型目录中",
-        boundTo: "已绑定：{name}",
-        search: "搜索模型名、ID 或提供方",
+        boundTo: "用于「{name}」",
+        search: "搜索模型名、ID 或提供商",
         refresh: "刷新模型目录",
         refreshAction: "刷新",
         catalogLoading: "正在刷新模型目录…",
         catalogError: "模型目录加载失败：{error}",
-        providerFailures: "部分提供方加载失败：{names}。已有绑定仍可解除。",
+        providerFailures: "部分提供商加载失败：{names}。已有绑定仍可解除。",
         noModels: "当前没有可用模型或已有绑定。",
         noMatches: "没有匹配的模型。",
         done: "完成",
@@ -121,9 +124,11 @@ window.__ModuleLoader__.load({
         selectedModels: "Applies to",
         selectModels: "Select models",
         modelCount: "{count} models",
+        modelCountOne: "{count} model",
+        selectionCount: "{count} selected",
         unbind: "Unbind {name}",
         unavailableModel: "Not in the current catalog",
-        boundTo: "Bound to: {name}",
+        boundTo: "Used by “{name}”",
         search: "Search model name, ID, or provider",
         refresh: "Refresh model catalog",
         refreshAction: "Refresh",
@@ -217,12 +222,12 @@ window.__ModuleLoader__.load({
       .dmg-editor { gap:24px; }
       .dmg-field { gap:6px; }
       .dmg-defaultMeta { display:grid; gap:2px; }
-      .dmg-nameInput { width:180px; max-width:220px; min-width:60px; flex:0 1 180px; border:1px solid var(--dsw-alias-border-l4); }
+      .dmg-nameInput { width:180px; max-width:220px; min-width:60px; flex:0 1 180px; border:var(--dsh-hairline-width,1px) solid var(--dsw-alias-border-l4); }
       .dmg-searchInput { flex:1; min-width:0; }
       .dmg-searchRow > button { flex:none; white-space:nowrap; }
-      .dmg-textarea { font:inherit; color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-1); border:.5px solid var(--dsw-alias-border-l4); border-radius:var(--dsw-radius-md); }
+      .dmg-textarea { font:inherit; color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-1); border:var(--dsh-hairline-width,1px) solid var(--dsw-alias-border-l4); border-radius:var(--dsw-radius-md); }
       .dmg-textarea { width:100%; height:clamp(280px,42vh,480px); padding:12px; line-height:24px; resize:none; }
-      .dmg-textarea:focus-visible { outline:none; border-color:var(--dsw-focus-ring-color); }
+      .dmg-nameInput:focus-visible, .dmg-textarea:focus-visible { outline:2px solid var(--dsw-focus-ring-color); outline-offset:2px; }
       .dmg-textarea:disabled { opacity:.6; resize:none; }
       .dmg-bindings { display:flex; flex-direction:column; gap:8px; }
       .dmg-boundList { display:flex; flex-wrap:wrap; gap:6px; max-height:160px; overflow:auto; }
@@ -232,10 +237,14 @@ window.__ModuleLoader__.load({
       .dmg-error { color:var(--dsw-alias-state-error-primary); }
       .dmg-warning { color:var(--dsw-alias-state-warn-label); }
       .dmg-dialog { width:min(640px,100%); }
-      .dmg-dialogBody { display:flex; flex-direction:column; gap:12px; min-width:0; }
+      .dmg-dialogBody { display:flex; flex-direction:column; gap:12px; min-width:0; min-height:0; }
       .dmg-candidateScroll { max-height:min(52vh,480px); overflow:auto; overscroll-behavior:contain; }
       .dmg-provider + .dmg-provider { margin-top:12px; }
       .dmg-providerHead { padding:6px 8px; }
+      .dmg-providerName { font-size:14px; color:var(--dsw-alias-label-primary); }
+      .dmg-pickerFooter, .dmg-modelHeading { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+      .dmg-pickerFooter { width:100%; }
+      .dmg-modelRow > * { width:100%; min-width:0; }
       .dmg-modelRow { display:flex; align-items:flex-start; gap:10px; padding:8px; border-radius:var(--dsw-radius-md); }
       .dmg-modelRow:hover { background:var(--dsw-alias-interactive-bg-hover); }
       .dmg-modelBody { gap:2px; overflow-wrap:anywhere; }
@@ -866,12 +875,12 @@ window.__ModuleLoader__.load({
               type: "button",
               className: "dmg-modelPickerLink",
               disabled: !editable || deleted,
-              "aria-label": t("selectModels"),
-              onClick: () => setPickerOpen(true),
+              onClick: () => {
+                guidanceStore.update((previous) => ({ ...previous, search: "" }));
+                setPickerOpen(true);
+              },
             },
-            t("selectedModels"),
-            " · ",
-            boundRows.length,
+            boundRows.length ? t("selectedModels") + " · " + boundRows.length : t("selectModels"),
           ),
         ),
         boundRows.length
@@ -997,7 +1006,16 @@ window.__ModuleLoader__.load({
           title: t("selectModels"),
           closeLabel: t("close"),
           className: "dmg-dialog",
-          footer: button(t("done"), () => setPickerOpen(false), { variant: "primary" }),
+          footer: h(
+            "div",
+            { className: "dmg-pickerFooter" },
+            h(
+              "span",
+              { className: "dmg-muted", role: "status" },
+              t("selectionCount", { count: boundRows.length }),
+            ),
+            button(t("done"), () => setPickerOpen(false), { variant: "primary" }),
+          ),
         },
         h(
           "div",
@@ -1018,12 +1036,14 @@ window.__ModuleLoader__.load({
               },
             }),
             button(
-              t("refreshAction"),
+              null,
               () => {
                 void catalog.refresh();
               },
               {
                 size: "sm",
+                variant: "ghost",
+                icon: h(IconRefreshOutlineRegular, { size: 16, "aria-hidden": true }),
                 disabled: catalogState.loading,
                 title: t("refresh"),
                 "aria-label": t("refresh"),
@@ -1059,7 +1079,9 @@ window.__ModuleLoader__.load({
                       h(
                         "span",
                         { className: "dmg-muted" },
-                        t("modelCount", { count: group.rows.length }),
+                        t(group.rows.length === 1 ? "modelCountOne" : "modelCount", {
+                          count: group.rows.length,
+                        }),
                       ),
                     ),
                     ...group.rows.map(([key, row]) => {
@@ -1075,23 +1097,24 @@ window.__ModuleLoader__.load({
                           label: h(
                             "span",
                             { className: "dmg-modelBody" },
-                            h("span", { className: "dmg-modelName" }, row.modelName),
                             h(
                               "span",
-                              { className: "dmg-muted" },
-                              row.providerName + " / " + row.model,
+                              { className: "dmg-modelHeading" },
+                              h("span", { className: "dmg-modelName" }, row.modelName),
+                              occupied &&
+                                h(
+                                  "span",
+                                  { className: "dmg-muted" },
+                                  t("boundTo", { name: nameOf(owner) }),
+                                ),
                             ),
+                            row.modelName !== row.model &&
+                              h("span", { className: "dmg-muted" }, row.model),
                             !row.available &&
                               h(
                                 "span",
                                 { className: "dmg-muted dmg-warning" },
                                 t("unavailableModel"),
-                              ),
-                            occupied &&
-                              h(
-                                "span",
-                                { className: "dmg-muted" },
-                                t("boundTo", { name: nameOf(owner) }),
                               ),
                           ),
                         }),
@@ -1160,7 +1183,9 @@ window.__ModuleLoader__.load({
           },
           ui.refreshing || ui.saving || conflicted || ui.message || (ready && !snapshot.writable)
             ? statusText
-            : t("dirtyCount", { count: dirtyCount }),
+            : dirtyCount > 0
+              ? t("dirtyCount", { count: dirtyCount })
+              : "",
         ),
         h(
           "div",

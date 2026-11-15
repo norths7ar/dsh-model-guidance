@@ -49,6 +49,7 @@ function harness(
       "IconTrashOutlineRegular",
       "IconQuestionOutlineRegular",
       "IconCloseOutlineRegular",
+      "IconRefreshOutlineRegular",
     ].map((name) => [name, name]),
   );
   vm.runInNewContext(source, {
@@ -459,7 +460,7 @@ test("built-in default is selectable and read only without custom controls or co
 test("binding transfers require confirmation and mark both guides; missing models can unbind", async () => {
   const app = harness();
   await app.tick();
-  app.click("Select models");
+  app.click("Applies to · 1");
   const checkboxes = app.nodes().filter((node) => node.type === "Checkbox");
   const occupied = checkboxes.find((node) => JSON.stringify(node.props.label).includes("Occupied"));
   occupied.props.onChange(true);
