@@ -26,7 +26,9 @@ These are IDs, not display names. Use the exact syntax, such as `{{model}}`, wit
 
 ## Compatibility and development
 
-The current verified host is **DSH Desktop 0.2.2-rc.3**.
+| Plugin version | DSH Desktop version    |
+| -------------- | ---------------------- |
+| 0.1.0          | 0.2.2-rc.3, 0.2.2-rc.5 |
 
 With Node.js 24, run these commands in the project directory:
 
